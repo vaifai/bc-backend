@@ -73,7 +73,7 @@ app.post('/login', async (req, res) => {
     }
   } catch (error) {
     console.error('Error during login:', error);
-    res.status(500).json({ error: 'Could not process login' });
+    res.status(500).json({ error: 'Could not process login', errorDetails: error });
   }
 });
 
