@@ -8,12 +8,38 @@ const port = 8080;
 dotenv.config();
 
 const AWS = require('aws-sdk');
-AWS.config.update({
-  region: 'ap-south-1',
-  accessKeyId: process.env.access_key,
-  secretAccessKey: process.env.secret_key
-});
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+
+// Commented out for Production
+// AWS.config.update({
+//   region: 'ap-south-1',
+//   accessKeyId: process.env.access_key,
+//   secretAccessKey: process.env.secret_key
+// });
+
+// Assuming Role for Production
+const assumeRole = async () => {
+  const sts = new AWS.STS();
+  const assumeRoleResponse = await sts.assumeRole({
+    RoleArn: process.env.AWS_ROLE_ARN,
+    RoleSessionName: 'VercelDeploymentSession'
+  }).promise();
+
+  return new AWS.Credentials({
+    accessKeyId: assumeRoleResponse.Credentials.AccessKeyId,
+    secretAccessKey: assumeRoleResponse.Credentials.SecretAccessKey,
+    sessionToken: assumeRoleResponse.Credentials.SessionToken
+  });
+};
+
+const getDynamoDBClient = async () => {
+  const credentials = await assumeRole();
+  return new AWS.DynamoDB.DocumentClient({
+    credentials: credentials,
+    region: process.env.AWS_REGION
+  });
+};
+
+const dynamodb = await getDynamoDBClient();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
